@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Take a Photo</title>
+</head>
+<body>
+    <h1>Take a Photo</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <button id="snap">Capture Photo</button>
+    <canvas id="canvas" width="640" height="480"></canvas>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const snap = document.getElementById('snap');
+        const context = canvas.getContext('2d');
+
+        // Get access to the camera
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+                video.srcObject = stream;
+                video.play();
+            });
+        }
+
+        // Trigger photo capture
+        snap.addEventListener("click", function() {
+            context.drawImage(video, 0, 0, 640, 480);
+            const image_data = canvas.toDataURL('image/png');
+
+            fetch('/upload_photo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ image: image_data })
+            }).then(response => {
+                return response.text();
+            }).then(data => {
+                alert(data);
+            });
+        });
+    </script>
+</body>
+</html>
+
