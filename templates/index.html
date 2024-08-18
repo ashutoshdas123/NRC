@@ -1,48 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Take a Photo</title>
-</head>
-<body>
-    <h1>Take a Photo</h1>
-    <video id="video" width="640" height="480" autoplay></video>
-    <button id="snap">Capture Photo</button>
-    <canvas id="canvas" width="640" height="480"></canvas>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script type="text/javascript" src="https://unpkg.com/webcam-easy/dist/webcam-easy.min.js"></script>
+    <style>
+      body {
+        padding: 10px;
+      }
+      
+      video,
+      canvas {
+        display: block;
+        margin: 0 auto;
+        background-color: black;
+      }
+      
+      a {
+        display: block;
+        text-align: center;
+        margin-top: 20px;
+        color: white;
+        background-color: darkorange;
+        padding: 10px 20px;
+        text-decoration: none;
+        width: 100px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      
+      canvas {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <video id="webCam" autoplay playsinline width="800" height="600"></video>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <a download id="snapLink" onclick="takeAPicture()">SNAP</a>
+    <p id="responseText"></p>
 
     <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const snap = document.getElementById('snap');
-        const context = canvas.getContext('2d');
-
-        // Get access to the camera
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
-                video.srcObject = stream;
-                video.play();
-            });
-        }
-
-        // Trigger photo capture
-        snap.addEventListener("click", function() {
-            context.drawImage(video, 0, 0, 640, 480);
-            const image_data = canvas.toDataURL('image/png');
-
-            fetch('/upload_photo', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ image: image_data })
-            }).then(response => {
-                return response.text();
-            }).then(data => {
-                alert(data);
-            });
-        });
+      const webCamElement = document.getElementById('webCam')
+      const canvasElement = document.getElementById('canvas')
+      const webcam = new Webcam(webCamElement, 'user', canvasElement)
+      webcam.start()
+      
+      // this function when called takes a picture
+      function takeAPicture() {
+        let picture = webcam.snap()
+        /**
+                  formdata is used to add key-value pair to
+                  FormData object.
+      
+                  this line is basically preparing the image data to be sent to the server as part of HTTP request.
+                  
+                  When you send this 'FormData' object to the server, the image will be included in the request body under the name 'image'
+                  */
+        const formData = new FormData()
+        formData.append('image', picture)
+      
+        // send the formData to the server using POST request
+        fetch('/upload_photo', {
+          method: 'POST',
+          body: formData
+        })
+          // Convert the response to text
+          .then((response) => response.text())
+          // send it to ai
+          .then(data=>{
+            // display the response from Clarifai
+            document.getElementById('responseText').innerText="Clarifai Response: "+data.join(', ');
+          })
+          // Handles the success senario
+          .catch((data) => console.log('Success:', data))
+          // Handles any error that occur
+          .catch((error) => console.log('Error:', error))
+      }
     </script>
-</body>
+  </body>
 </html>
-
